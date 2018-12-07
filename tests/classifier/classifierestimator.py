@@ -5,14 +5,6 @@ import time
 
 
 def input_fn():
-    """ 
-    xor_x = {
-        'x1': tf.constant([ 0 , 1 , 0 , 1 ]) ,
-        'x2': tf.constant([ 0 , 0 , 1 , 1 ])
-    }
-
-    xor_y =  tf.constant([ 0 , 1 , 1 , 0 ])
- """
 
     xor_x = {
         'x1': tf.constant( [ 0 , 1 , 0 , 1 ] ),
@@ -22,6 +14,7 @@ def input_fn():
     xor_y =  tf.constant( [ 0 , 1 , 1 , 0 ] )
 
     ds = tf.data.Dataset.from_tensors( (xor_x,xor_y) )
+    ds = ds.repeat(5000)
     return ds
 
 
@@ -29,7 +22,7 @@ x1_column = feature_column.numeric_column( 'x1' )
 x2_column = feature_column.numeric_column( 'x2' )
 
 estimator = DNNClassifier(
-    hidden_units=[4, 4],
+    hidden_units=[6, 6],
     feature_columns=[x1_column, x2_column],
     model_dir='./model'
 )
@@ -40,7 +33,7 @@ def accuracy():
     return result['accuracy']
 
 while accuracy() < 1.0:
-    estimator.train( input_fn=input_fn , steps=1000000 )
+    estimator.train( input_fn=input_fn )
 
 def eval_input( x1, x2 ):
     xor_x = {
