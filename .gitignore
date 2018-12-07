@@ -1,0 +1,8 @@
+# Python virtualenv
+venv
+
+# VS Code stuff
+.vscode
+
+# Models
+tests/classifier/model
