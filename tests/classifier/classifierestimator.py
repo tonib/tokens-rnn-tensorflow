@@ -15,11 +15,11 @@ def input_fn():
  """
 
     xor_x = {
-        'x1': [ 0 , 1 , 0 , 1 ] ,
-        'x2': [ 0 , 0 , 1 , 1 ]
+        'x1': tf.constant( [ 0 , 1 , 0 , 1 ] ),
+        'x2': tf.constant( [ 0 , 0 , 1 , 1 ] )
     }
 
-    xor_y =  [ 0 , 1 , 1 , 0 ]
+    xor_y =  tf.constant( [ 0 , 1 , 1 , 0 ] )
 
     ds = tf.data.Dataset.from_tensors( (xor_x,xor_y) )
     return ds
@@ -34,13 +34,13 @@ estimator = DNNClassifier(
     model_dir='./model'
 )
 
-def precission():
+def accuracy():
     result = estimator.evaluate( input_fn=input_fn )
     print(result)
-    return result['precision']
+    return result['accuracy']
 
-while precission() < 1.0:
-    estimator.train( input_fn=input_fn , steps=1000 )
+while accuracy() < 1.0:
+    estimator.train( input_fn=input_fn , steps=1000000 )
 
 def eval_input( x1, x2 ):
     xor_x = {
