@@ -62,7 +62,7 @@ def accuracy() -> float:
 while accuracy() < 1.0:
     estimator.train( input_fn=lambda:input_fn(1000) )
 
-# The oficial way:
+# The oficial way to make predictions with estimators:
 # def single_eval_input_dataset( x1 : int, x2 : int ) -> tf.data.Dataset:
 #     """
 #     Returns a dataset with a single input for the XOR (without the output!)
