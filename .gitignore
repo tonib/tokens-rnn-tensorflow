@@ -6,6 +6,7 @@ venv
 
 # Models
 tests/classifier/model
+tests/rnn/model
 
 # Python cached bytecode ?
 **/__pycache__
