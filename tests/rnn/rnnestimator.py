@@ -5,25 +5,41 @@ import tensorflow.contrib.feature_column as contrib_feature_column
 import test_utils
 from typing import List
 
-#tf.enable_eager_execution()
-
 # Test to make a char RNN predictor
 
-# Simple text: repetitions of "0123456789"
+# Simple sample text to learn: repetitions of "0123456789"
 text=""
 for _ in range(10):
     text += "0123456789"
 
-# Vocabulary:
+# Sequence length that will be feeded to the network
+SEQUENCE_LENGHT = 7
+
+# The real vocabulary:
 vocabulary = list( set(text) )
+
+# As far I know, Tensorflow RNN estimators don't support variable length sequences, so I'll use the char "_" as padding
+# Maybe it's supported, right now I dont' know how
+vocabulary.append('_')
+
 # Important! Otherwise, with different executions, the list can be in different orders (really)
 vocabulary.sort()
+
+def pad_sequence( text_sequence : str ) -> List[str]:
+    l = len(text_sequence)
+    if l < SEQUENCE_LENGHT:
+        # Pad string: "_..._SEQUENCE"
+        print('PADDING!!!')
+        text_sequence = text_sequence.rjust( SEQUENCE_LENGHT , '_')
+    
+    # Return the text as a characters list
+    return list(text_sequence)
 
 # Train input and outputs
 inputs = { 'character': [] }
 outputs =  []
 
-def prepare_sequences_length(seq_length : int):
+def prepare_train_sequences_length(seq_length : int):
     """
     Prepare sequences of a given length
 
@@ -33,13 +49,13 @@ def prepare_sequences_length(seq_length : int):
     for i in range(0, len(text) - seq_length):
         sequence = text[i : i + seq_length]
         sequence_output = text[i + seq_length : i + seq_length+1]
-        inputs['character'].append( list(sequence) )
+        inputs['character'].append( pad_sequence(sequence) )
         outputs.append(sequence_output)
 
 
 # Prepare sequences of a range of lengths
-for sequence_length in range(7, 8):
-    prepare_sequences_length(sequence_length)
+for sequence_length in range(SEQUENCE_LENGHT, SEQUENCE_LENGHT + 1):
+    prepare_train_sequences_length(sequence_length)
 
 print("N. train sequences: ", len(inputs['character']))
 
@@ -76,28 +92,28 @@ while test_utils.accuracy(estimator, input_fn) < 1.0:
     print("Training...")
     estimator.train(input_fn = lambda:input_fn(100))
 
-def predict( sequence : List[str] ):
+def predict( text : str ):
     """
     Predicts and print the next character after a given sequence
 
     Args:
-        sequence: The input sequence (list of characters)
+        text: The input sequence text
     """
 
-    result = estimator.predict( input_fn=lambda:tf.data.Dataset.from_tensors( ({ 'character' : [ sequence ] }) ) )
+    result = estimator.predict( input_fn=lambda:tf.data.Dataset.from_tensors( ({ 'character' : [ pad_sequence(text) ] }) ) )
     print("-----")
-    print("Input sequence: " , sequence )
+    print("Input sequence: " , text )
     for r in result:
         print(r)
         print('Output:', r['class_ids'])
     print("-----")
 
 
-predict( [ '0' , '1' , '2' , '3' , '4' , '5' , '6'] ) # OK
-predict( [ '1' , '2' , '3' , '4' , '5' , '6', '7' ] ) # OK
-predict( [ '2' , '3' , '4' , '5' , '6', '7' , '8' ] ) # OK
-predict( [ '3' , '4' , '5' , '6', '7' , '8' , '9' ] ) # OK
-predict( [ '4' , '5' , '6', '7' , '8' , '9' , '0' ] ) # OK
-predict(  [ '3' ] ) # This fails
-predict(  [ '5' , '6' , '7' , '8' ] ) # This fails
-predict( [ '2' , '3' , '4' , '5' , '6', '7' , '8' , '9' , '0' , '1' ] ) # This fails
+predict( '0123456' )
+predict( '1234567' )
+predict( '2345678' )
+predict( '3456789' )
+predict( '4567890' )
+predict( '3' ) # This fails
+predict( '5678' ) # This fails
+predict( '2345678901' ) # This fails
