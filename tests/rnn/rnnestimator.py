@@ -19,17 +19,29 @@ vocabulary = list( set(text) )
 # Important! Otherwise, with different executions, the list can be in different orders (really)
 vocabulary.sort()
 
-# Prepare inputs and outputs
-SEQUENCE_LENGHT = 7
+# Train input and outputs
 inputs = { 'character': [] }
 outputs =  []
-for i in range(0, len(text) - SEQUENCE_LENGHT):
-    sequence = text[i : i + SEQUENCE_LENGHT]
-    sequence_output = text[i + SEQUENCE_LENGHT : i + SEQUENCE_LENGHT+1]
-    #print(sequence , sequence_output)
-    inputs['character'].append( list(sequence) )
-    outputs.append(sequence_output)
 
+def prepare_sequences_length(seq_length : int):
+    """
+    Prepare sequences of a given length
+
+    Args:
+        lenght: Length of sequences to prepare
+    """
+    for i in range(0, len(text) - seq_length):
+        sequence = text[i : i + seq_length]
+        sequence_output = text[i + seq_length : i + seq_length+1]
+        inputs['character'].append( list(sequence) )
+        outputs.append(sequence_output)
+
+
+# Prepare sequences of a range of lengths
+for sequence_length in range(7, 8):
+    prepare_sequences_length(sequence_length)
+
+print("N. train sequences: ", len(inputs['character']))
 
 def input_fn(n_repetitions = 1) -> tf.data.Dataset:
     """
@@ -51,9 +63,6 @@ def input_fn(n_repetitions = 1) -> tf.data.Dataset:
     
     return ds
 
-#test_utils.debug_ds( input_fn() , True )
-
-#character_column = feature_column.categorical_column_with_vocabulary_list( 'character' , vocabulary_list = vocabulary )
 character_column = contrib_feature_column.sequence_categorical_column_with_vocabulary_list( 'character' , vocabulary_list = vocabulary )
 indicator_column = feature_column.indicator_column( character_column )
 feature_columns = [ indicator_column ]
