@@ -3,6 +3,7 @@ import tensorflow.feature_column as feature_column
 from tensorflow.contrib.estimator import RNNClassifier
 import tensorflow.contrib.feature_column as contrib_feature_column
 import test_utils
+from typing import List
 
 #tf.enable_eager_execution()
 
@@ -17,11 +18,8 @@ for _ in range(10):
 vocabulary = list( set(text) )
 # Important! Otherwise, with different executions, the list can be in different orders (really)
 vocabulary.sort()
-#print( "Vocabulary: " , vocabulary )
 
-# Prepare batches
-
-# Inputs and outputs
+# Prepare inputs and outputs
 SEQUENCE_LENGHT = 7
 inputs = { 'character': [] }
 outputs =  []
@@ -72,17 +70,17 @@ while test_utils.accuracy(estimator, repeated_input_fn) < 1.0:
     test_utils.accuracy(estimator, repeated_input_fn)
 
 
-def predict( sequence ):
+def predict( sequence : List[str] ):
+    """
+    Predicts and print the next character after a given sequence
 
-    def input_fn_predict():
-        x = ({ 'character' : [ sequence ] })
-        return tf.data.Dataset.from_tensors( x )
-        
-    result = estimator.predict( input_fn=input_fn_predict )
-    #result = estimator.predict( input_fn=input_fn )
-    #print(result)
+    Args:
+        sequence: The input sequence (list of characters)
+    """
+
+    result = estimator.predict( input_fn=lambda:tf.data.Dataset.from_tensors( ({ 'character' : [ sequence ] }) ) )
     print("-----")
-    print("Input: " , sequence )
+    print("Input sequence: " , sequence )
     for r in result:
         print(r)
         print('Output:', r['class_ids'])
@@ -97,28 +95,3 @@ predict( [ '4' , '5' , '6', '7' , '8' , '9' , '0' ] ) # OK
 predict(  [ '3' ] ) # This fails
 predict(  [ '5' , '6' , '7' , '8' ] ) # This fails
 predict( [ '2' , '3' , '4' , '5' , '6', '7' , '8' , '9' , '0' , '1' ] ) # This fails
-
-
-# Inputs and outputs
-# def predict_fn():
-#     inputs = { 'character': [] }
-#     outputs =  []
-#     for i in range(2, 3):
-#         sequence = text[i : i + SEQUENCE_LENGHT]
-#         sequence_output = text[i + SEQUENCE_LENGHT : i + SEQUENCE_LENGHT+1]
-#         #print(sequence , sequence_output)
-#         inputs['character'].append( list(sequence) )
-#         outputs.append(sequence_output)
-
-#     print(inputs)
-#     print(outputs)
-
-#     ds = tf.data.Dataset.from_tensors( (inputs) )
-#     return ds
-
-# result = estimator.predict( input_fn=predict_fn )
-# print("-----")
-# for r in result:
-#     print(r)
-#     print('Output:', r['class_ids'])
-# print("-----")
