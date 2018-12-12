@@ -36,19 +36,18 @@ def input_fn(n_repetitions = 1) -> tf.data.Dataset:
     Returns the text as char array
 
     Args:
-        n_repetitions: Number of times to repeat the text
+        n_repetitions: Number of times to repeat the inputs
     """
 
     # The dataset
-    ds = tf.data.Dataset.from_tensors( (inputs,outputs) )
-    #ds = tf.data.Dataset.from_tensor_slices( (inputs,outputs) )
+    ds = tf.data.Dataset.from_tensor_slices( (inputs,outputs) )
 
-    # If we are training, we will need a lot of samples, not only four. So, repeat the 4 values
+    # Repeat inputs n times
     if n_repetitions > 1:
         ds = ds.repeat(n_repetitions)
 
-    # ds = ds.shuffle( 1000 )
-    # ds = ds.batch(16)
+    ds = ds.shuffle( 1000 )
+    ds = ds.batch(4)
     
     return ds
 
@@ -64,11 +63,9 @@ estimator = RNNClassifier(
     num_units=[7], cell_type='lstm', model_dir='./model', 
     n_classes=10, label_vocabulary=vocabulary)
 
-repeated_input_fn = lambda:input_fn(100)
-while test_utils.accuracy(estimator, repeated_input_fn) < 1.0:
-    estimator.train(input_fn = repeated_input_fn)
-    test_utils.accuracy(estimator, repeated_input_fn)
-
+while test_utils.accuracy(estimator, input_fn) < 1.0:
+    print("Training...")
+    estimator.train(input_fn = lambda:input_fn(100))
 
 def predict( sequence : List[str] ):
     """
