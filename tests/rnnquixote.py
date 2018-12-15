@@ -82,16 +82,6 @@ def input_fn(n_repetitions = 1) -> tf.data.Dataset:
     
     return ds
 
-def accuracy(estimator, input_fn) -> float:
-    """
-    Returns the current ratio of succesfully predicted outputs of XOR function: 0.0 = 0%, 1.0 = 100%
-    """
-
-    # Estimate a dataset with no repetitions (all the possible XOR inputs)
-    result = estimator.evaluate( input_fn=input_fn )
-    print("Evaluation: ", result)
-    return result['accuracy']
-
 def predict_char( text : str ) -> str:
     """
     Predicts and print the next character after a given sequence
@@ -134,7 +124,7 @@ if args.op == 'train':
     print( 'Training...' )
     while True:
         estimator.train(input_fn=input_fn)
-        accuracy(estimator, input_fn)
+        test_utils.accuracy(estimator, input_fn)
 elif args.op == 'debugds':
     test_utils.debug_ds(input_fn() , True)
 else:
