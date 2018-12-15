@@ -5,9 +5,7 @@ venv
 .vscode
 
 # Models
-tests/classifier/model
-tests/rnn/model
-tests/rnn-quixote/model
+tests/model
 
 # Python cached bytecode ?
 **/__pycache__
