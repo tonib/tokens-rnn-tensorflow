@@ -3,6 +3,7 @@ import tensorflow.feature_column as feature_column
 from tensorflow.contrib.estimator import RNNClassifier
 import tensorflow.contrib.feature_column as contrib_feature_column
 import argparse
+import test_utils
 
 #tf.enable_eager_execution()
 
@@ -128,28 +129,6 @@ def predict_text( text : str ) -> str:
         result += predict_char( result )
     print(result)
 
-def debug_ds(ds, print_ds=True):
-    if print_ds:
-        print(ds)
-        print()
-
-    it = ds.make_one_shot_iterator()
-    n_elements = 0
-    while True:
-        try:
-            v = it.get_next()
-        except:
-            break
-        
-        n_elements += 1
-        if print_ds:
-            print(v)
-            # print(v[0])
-            # print(v[1])
-            print()
-
-    print("N.elements: ", n_elements)
-
 if args.op == 'train':
     # Training loop
     print( 'Training...' )
@@ -157,7 +136,7 @@ if args.op == 'train':
         estimator.train(input_fn=input_fn)
         accuracy(estimator, input_fn)
 elif args.op == 'debugds':
-    debug_ds(input_fn() , True)
+    test_utils.debug_ds(input_fn() , True)
 else:
     start_text = text[:SEQUENCE_LENGHT]
     print("start_text len:", len(start_text))
