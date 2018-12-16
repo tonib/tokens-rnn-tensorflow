@@ -4,6 +4,7 @@ from tensorflow.contrib.estimator import RNNClassifier
 import tensorflow.contrib.feature_column as contrib_feature_column
 import argparse
 import test_utils
+import random
 
 #tf.enable_eager_execution()
 
@@ -37,30 +38,30 @@ vocabulary.sort()
 
 print("Vocabulary: " , vocabulary)
 
-# Train input and outputs
-# inputs = { 'character': [] }
-# outputs =  []
-# for i in range(0, len(text) - SEQUENCE_LENGHT):
-#     sequence = text[i : i + SEQUENCE_LENGHT]
-#     sequence_output = text[i + SEQUENCE_LENGHT : i + SEQUENCE_LENGHT+1]
-#     inputs['character'].append( list(sequence) )
-#     outputs.append(sequence_output)
-#     #print("Sequence: " , sequence , ", Output: " , sequence_output)
+# def generator():
+#     print( 'Generator started' )
+#     for i in range(0, len(text) - SEQUENCE_LENGHT):
+#         sequence = text[i : i + SEQUENCE_LENGHT]
+#         sequence_output = text[i + SEQUENCE_LENGHT : i + SEQUENCE_LENGHT+1]
+#         yield ( { 'character' : list(sequence) } , sequence_output )
+#     print( 'Generator finished' )
 
-# print("N. train sequences: ", len(inputs['character']))
+TRAIN_SIZE = 2000
 
-def generator():
-    print( 'Generator started' )
-    for i in range(0, len(text) - SEQUENCE_LENGHT):
+def train_generator():
+    for _ in range(TRAIN_SIZE):
+        sequence_start_idx = random.randint( 0 , len(text) - SEQUENCE_LENGHT )
+        sequence = text[sequence_start_idx : sequence_start_idx + SEQUENCE_LENGHT]
+        sequence_output = text[sequence_start_idx + SEQUENCE_LENGHT : sequence_start_idx + SEQUENCE_LENGHT+1]
+        yield ( { 'character' : list(sequence) } , sequence_output )
+
+def evaluate_generator():
+    for i in range(TRAIN_SIZE):
         sequence = text[i : i + SEQUENCE_LENGHT]
         sequence_output = text[i + SEQUENCE_LENGHT : i + SEQUENCE_LENGHT+1]
-        # inputs['character'].append( list(sequence) )
-        # outputs.append(sequence_output)
-        #print( 'Sequence: ', sequence, ', output: ' , sequence_output )
         yield ( { 'character' : list(sequence) } , sequence_output )
-    print( 'Generator finished' )
 
-def input_fn(n_repetitions = 1) -> tf.data.Dataset:
+def input_fn(evaluate=False) -> tf.data.Dataset:
     """
     Returns the text as char array
 
@@ -69,19 +70,15 @@ def input_fn(n_repetitions = 1) -> tf.data.Dataset:
     """
 
     # The dataset
-    #ds = tf.data.Dataset.from_tensor_slices( (inputs,outputs) )
-    ds = tf.data.Dataset.from_generator( generator=generator, 
+    g = ( evaluate_generator if evaluate else train_generator )
+    ds = tf.data.Dataset.from_generator( generator=g, 
         output_types=( { 'character' : tf.string } , tf.string ),
         output_shapes=( { 'character' : (SEQUENCE_LENGHT,) } , () )
     )
 
-    # Repeat inputs n times
-    if n_repetitions > 1:
-        ds = ds.repeat(n_repetitions)
-
-    ds = ds.shuffle( 1000 )
     ds = ds.batch(64)
-    
+    ds = ds.prefetch(1)
+
     return ds
 
 # The single character sequence 
@@ -142,7 +139,7 @@ if args.op == 'train':
         print("training...")
         estimator.train(input_fn=input_fn)
         print("evaluating...")
-        test_utils.accuracy(estimator, input_fn, steps=100)
+        test_utils.accuracy(estimator, lambda:input_fn(True), steps=100)
 elif args.op == 'debugds':
     test_utils.debug_ds(input_fn() , True)
 else:
