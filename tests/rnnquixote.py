@@ -20,9 +20,11 @@ with open( 'quixote.txt' , 'r')  as file:
     text = file.read()
 #print(text)
 
+MAX_TEXT_LENGHT = 2000000
+
 # Right now all if I try to run this will all text, it eats all my computer memory and it hags. Avoid it:
-if len(text) > 1000:
-    text = text[:1000]
+if len(text) > MAX_TEXT_LENGHT:
+    text = text[:MAX_TEXT_LENGHT]
 
 # Sequence length that will be feeded to the network
 SEQUENCE_LENGHT = 200
@@ -36,17 +38,51 @@ vocabulary.sort()
 print("Vocabulary: " , vocabulary)
 
 # Train input and outputs
-inputs = { 'character': [] }
-outputs =  []
+# inputs = { 'character': [] }
+# outputs =  []
+# for i in range(0, len(text) - SEQUENCE_LENGHT):
+#     sequence = text[i : i + SEQUENCE_LENGHT]
+#     sequence_output = text[i + SEQUENCE_LENGHT : i + SEQUENCE_LENGHT+1]
+#     inputs['character'].append( list(sequence) )
+#     outputs.append(sequence_output)
+#     #print("Sequence: " , sequence , ", Output: " , sequence_output)
 
-for i in range(0, len(text) - SEQUENCE_LENGHT):
-    sequence = text[i : i + SEQUENCE_LENGHT]
-    sequence_output = text[i + SEQUENCE_LENGHT : i + SEQUENCE_LENGHT+1]
-    inputs['character'].append( list(sequence) )
-    outputs.append(sequence_output)
-    #print("Sequence: " , sequence , ", Output: " , sequence_output)
+# print("N. train sequences: ", len(inputs['character']))
 
-print("N. train sequences: ", len(inputs['character']))
+def generator():
+    print( 'Generator started' )
+    for i in range(0, len(text) - SEQUENCE_LENGHT):
+        sequence = text[i : i + SEQUENCE_LENGHT]
+        sequence_output = text[i + SEQUENCE_LENGHT : i + SEQUENCE_LENGHT+1]
+        # inputs['character'].append( list(sequence) )
+        # outputs.append(sequence_output)
+        #print( 'Sequence: ', sequence, ', output: ' , sequence_output )
+        yield ( { 'character' : list(sequence) } , sequence_output )
+    print( 'Generator finished' )
+
+def input_fn(n_repetitions = 1) -> tf.data.Dataset:
+    """
+    Returns the text as char array
+
+    Args:
+        n_repetitions: Number of times to repeat the inputs
+    """
+
+    # The dataset
+    #ds = tf.data.Dataset.from_tensor_slices( (inputs,outputs) )
+    ds = tf.data.Dataset.from_generator( generator=generator, 
+        output_types=( { 'character' : tf.string } , tf.string ),
+        output_shapes=( { 'character' : (SEQUENCE_LENGHT,) } , () )
+    )
+
+    # Repeat inputs n times
+    if n_repetitions > 1:
+        ds = ds.repeat(n_repetitions)
+
+    ds = ds.shuffle( 1000 )
+    ds = ds.batch(64)
+    
+    return ds
 
 # The single character sequence 
 character_column = contrib_feature_column.sequence_categorical_column_with_vocabulary_list( 'character' , vocabulary_list = vocabulary )
@@ -61,26 +97,6 @@ estimator = RNNClassifier(
     model_dir='./model', 
     n_classes=len(vocabulary), 
     label_vocabulary=vocabulary)
-
-def input_fn(n_repetitions = 1) -> tf.data.Dataset:
-    """
-    Returns the text as char array
-
-    Args:
-        n_repetitions: Number of times to repeat the inputs
-    """
-
-    # The dataset
-    ds = tf.data.Dataset.from_tensor_slices( (inputs,outputs) )
-
-    # Repeat inputs n times
-    if n_repetitions > 1:
-        ds = ds.repeat(n_repetitions)
-
-    ds = ds.shuffle( 1000 )
-    ds = ds.batch(64)
-    
-    return ds
 
 def predict_char( text : str ) -> str:
     """
@@ -107,7 +123,8 @@ def predict_char( text : str ) -> str:
                 idx = tf.multinomial( logits=logits , num_samples=1)
                 idx = tf.squeeze(idx,axis=-1).eval()
                 print("Multinomial idx: " , idx, ", Character: " , vocabulary[idx[0]] )
-                c = vocabulary[idx[0]]
+                # Comment this line to return the most probable char
+                #c = vocabulary[idx[0]]
 
         return c
     print("-----")
@@ -121,10 +138,11 @@ def predict_text( text : str ) -> str:
 
 if args.op == 'train':
     # Training loop
-    print( 'Training...' )
     while True:
+        print("training...")
         estimator.train(input_fn=input_fn)
-        test_utils.accuracy(estimator, input_fn)
+        print("evaluating...")
+        test_utils.accuracy(estimator, input_fn, steps=100)
 elif args.op == 'debugds':
     test_utils.debug_ds(input_fn() , True)
 else:

@@ -25,13 +25,13 @@ def debug_ds(ds, print_ds=True):
     print("N.elements: ", n_elements)
 
 
-def accuracy(estimator, input_fn) -> float:
+def accuracy(estimator, input_fn, steps=None) -> float:
     """
-    Returns the current ratio of succesfully predicted outputs of XOR function: 0.0 = 0%, 1.0 = 100%
+    Returns the current ratio of succesfully predicted outputs: 0.0 = 0%, 1.0 = 100%
     """
 
     # Estimate a dataset with no repetitions (all the possible XOR inputs)
-    result = estimator.evaluate( input_fn=input_fn )
+    result = estimator.evaluate( input_fn=input_fn , steps=steps)
     print("Evaluation: ", result)
     return result['accuracy']
 
