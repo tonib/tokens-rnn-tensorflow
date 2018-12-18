@@ -21,12 +21,6 @@ with open( 'quixote.txt' , 'r')  as file:
     text = file.read()
 #print(text)
 
-MAX_TEXT_LENGHT = 2000000
-
-# Right now all if I try to run this will all text, it eats all my computer memory and it hags. Avoid it:
-if len(text) > MAX_TEXT_LENGHT:
-    text = text[:MAX_TEXT_LENGHT]
-
 # Sequence length that will be feeded to the network
 SEQUENCE_LENGHT = 200
 
@@ -37,14 +31,6 @@ vocabulary = list( set(text) )
 vocabulary.sort()
 
 print("Vocabulary: " , vocabulary)
-
-# def generator():
-#     print( 'Generator started' )
-#     for i in range(0, len(text) - SEQUENCE_LENGHT):
-#         sequence = text[i : i + SEQUENCE_LENGHT]
-#         sequence_output = text[i + SEQUENCE_LENGHT : i + SEQUENCE_LENGHT+1]
-#         yield ( { 'character' : list(sequence) } , sequence_output )
-#     print( 'Generator finished' )
 
 TRAIN_SIZE = 2000
 
