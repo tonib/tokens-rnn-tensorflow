@@ -125,7 +125,17 @@ def predict_char_predictor( predict_fn : Predictor , text : str ) -> str:
     input = [ list(text) ]
     #print("Input: " , input)
     predictions = predict_fn( { 'character': input } )
-    return predictions['classes'][0][0].decode( 'utf-8' )
+    c = predictions['classes'][0][0].decode( 'utf-8' )
+    # TODO: I guess this leaks memory. Define ops once and run inside session?
+    with tf.Session():
+        logits = tf.reshape( predictions['logits'] , ( 1 , -1 ) )
+        idx = tf.multinomial( logits=logits , num_samples=1)
+        idx = tf.squeeze(idx,axis=-1).eval()
+        #print("Multinomial idx: " , idx, ", Character: " , vocabulary[idx[0]] )
+        # Comment this line to return the most probable char
+        c = vocabulary[idx[0]]
+
+    return c
 
 def predict_text_predictor( predict_fn : Predictor , text : str ) -> str:
     # TODO: Check if placeholder with variable input lenght  is allowed, for variable input sequences
@@ -139,6 +149,7 @@ def predict_text_predictor( predict_fn : Predictor , text : str ) -> str:
         next_sequence = next_sequence[1:] + new_character
 
 def serving_input_receiver_fn():
+    # TODO: Check if placeholder with variable input lenght  is allowed, for variable input sequences
     # It seems the shape MUST include the batch size (the 1)
     x = tf.placeholder(dtype=tf.string, shape=[1, SEQUENCE_LENGHT], name='character')
     print("Input shape: " , x)
@@ -176,7 +187,7 @@ elif args.op == 'testperformance':
     print("Total: " , elapsed , ", time per prediction: " , elapsed / NPREDICTIONS )
     #print( predictions )
 else:
-    # predict_fn = tf.contrib.predictor.from_saved_model(EXPORTED_MODEL_PATH , signature_def_key='predict')
-    # predict_text_predictor(predict_fn , start_text)
+    predict_fn = tf.contrib.predictor.from_saved_model(EXPORTED_MODEL_PATH , signature_def_key='predict')
+    predict_text_predictor(predict_fn , start_text)
 
-    predict_text_estimator( start_text )
+    #predict_text_estimator( start_text )
