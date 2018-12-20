@@ -6,6 +6,7 @@ import argparse
 import test_utils
 import random
 import time
+from tensorflow.contrib.predictor.predictor import Predictor
 
 #tf.enable_eager_execution()
 
@@ -82,7 +83,7 @@ estimator = RNNClassifier(
     n_classes=len(vocabulary), 
     label_vocabulary=vocabulary)
 
-def predict_char( text : str ) -> str:
+def predict_char_estimator( text : str ) -> str:
     """
     Predicts and print the next character after a given sequence
 
@@ -94,26 +95,48 @@ def predict_char( text : str ) -> str:
     print("-----")
     print("Input sequence: '" , text , "'")
     for r in result:
-        print('Prediction: ' , r)
+        #print('Prediction: ' , r)
 
         c = r['classes'][0].decode( 'utf-8' )
-        print( 'Class output: "', c , '"')
+        #print( 'Class output: "', c , '"')
 
         # Instead returning the most probable character, get a random sample (see https://www.tensorflow.org/tutorials/sequences/text_generation):
-        g_1 = tf.Graph()
-        with g_1.as_default():
-            with tf.Session():
-                logits = tf.reshape( r['logits'] , ( 1 , -1 ) )
-                idx = tf.multinomial( logits=logits , num_samples=1)
-                idx = tf.squeeze(idx,axis=-1).eval()
-                print("Multinomial idx: " , idx, ", Character: " , vocabulary[idx[0]] )
-                # Comment this line to return the most probable char
-                #c = vocabulary[idx[0]]
+        # g_1 = tf.Graph()
+        # with g_1.as_default():
+        #     with tf.Session():
+        #         logits = tf.reshape( r['logits'] , ( 1 , -1 ) )
+        #         idx = tf.multinomial( logits=logits , num_samples=1)
+        #         idx = tf.squeeze(idx,axis=-1).eval()
+        #         print("Multinomial idx: " , idx, ", Character: " , vocabulary[idx[0]] )
+        #         # Comment this line to return the most probable char
+        #         #c = vocabulary[idx[0]]
 
         return c
     print("-----")
     return '?'
 
+def predict_text_estimator( text : str ) -> str:
+    result = text
+    for _ in range(1000):
+        result += predict_char_estimator( result )
+        print(result)
+
+def predict_char_predictor( predict_fn : Predictor , text : str ) -> str:
+    input = [ list(text) ]
+    #print("Input: " , input)
+    predictions = predict_fn( { 'character': input } )
+    return predictions['classes'][0][0].decode( 'utf-8' )
+
+def predict_text_predictor( predict_fn : Predictor , text : str ) -> str:
+    # TODO: Check if placeholder with variable input lenght  is allowed, for variable input sequences
+    result = text
+    next_sequence = text
+    for _ in range(1000):
+        new_character = predict_char_predictor( predict_fn, next_sequence )
+        print( 'New character:"' + new_character + '"' )
+        result += new_character
+        print('"' + result + '"')
+        next_sequence = next_sequence[1:] + new_character
 
 def serving_input_receiver_fn():
     # It seems the shape MUST include the batch size (the 1)
@@ -122,13 +145,8 @@ def serving_input_receiver_fn():
     inputs =  {'character': x }
     return tf.estimator.export.ServingInputReceiver(inputs, inputs)
 
-
-def predict_text( text : str ) -> str:
-    result = text
-    for _ in range(50):
-        result += predict_char( result )
-    print(result)
-
+EXPORTED_MODEL_PATH = 'exportedmodel/1545327527'
+start_text = text[:SEQUENCE_LENGHT]
 
 if args.op == 'train':
     # Training loop
@@ -142,11 +160,10 @@ elif args.op == 'debugds':
 elif args.op == 'export':
     print("Exporting...")
     estimator.export_savedmodel('exportedmodel', serving_input_receiver_fn, strip_default_attrs=True)    
-else:
-    start_text = text[:SEQUENCE_LENGHT]
-
+elif args.op == 'testperformance':
+    print("Testing performance...")
     # Load model from export directory, and make a predict function.
-    predict_fn = tf.contrib.predictor.from_saved_model('exportedmodel/1545285274' , signature_def_key='predict')
+    predict_fn = tf.contrib.predictor.from_saved_model(EXPORTED_MODEL_PATH , signature_def_key='predict')
     print( predict_fn )
 
     characters = text[:SEQUENCE_LENGHT]
@@ -157,4 +174,9 @@ else:
     end = time.time()
     elapsed = end - start
     print("Total: " , elapsed , ", time per prediction: " , elapsed / NPREDICTIONS )
-    print( predictions )
+    #print( predictions )
+else:
+    # predict_fn = tf.contrib.predictor.from_saved_model(EXPORTED_MODEL_PATH , signature_def_key='predict')
+    # predict_text_predictor(predict_fn , start_text)
+
+    predict_text_estimator( start_text )
