@@ -6,6 +6,7 @@ venv
 
 # Models
 tests/model
+tests/exportedmodel
 
 # Python cached bytecode ?
 **/__pycache__

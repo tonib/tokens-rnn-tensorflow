@@ -5,6 +5,7 @@ import tensorflow.contrib.feature_column as contrib_feature_column
 import argparse
 import test_utils
 import random
+import time
 
 #tf.enable_eager_execution()
 
@@ -113,11 +114,21 @@ def predict_char( text : str ) -> str:
     print("-----")
     return '?'
 
+
+def serving_input_receiver_fn():
+    # It seems the shape MUST include the batch size (the 1)
+    x = tf.placeholder(dtype=tf.string, shape=[1, SEQUENCE_LENGHT], name='character')
+    print("Input shape: " , x)
+    inputs =  {'character': x }
+    return tf.estimator.export.ServingInputReceiver(inputs, inputs)
+
+
 def predict_text( text : str ) -> str:
     result = text
     for _ in range(50):
         result += predict_char( result )
     print(result)
+
 
 if args.op == 'train':
     # Training loop
@@ -128,9 +139,22 @@ if args.op == 'train':
         test_utils.accuracy(estimator, lambda:input_fn(True), steps=100)
 elif args.op == 'debugds':
     test_utils.debug_ds(input_fn() , True)
+elif args.op == 'export':
+    print("Exporting...")
+    estimator.export_savedmodel('exportedmodel', serving_input_receiver_fn, strip_default_attrs=True)    
 else:
     start_text = text[:SEQUENCE_LENGHT]
-    print("start_text len:", len(start_text))
-    predict_text( start_text )
-    #predict_text( 'abc' )
 
+    # Load model from export directory, and make a predict function.
+    predict_fn = tf.contrib.predictor.from_saved_model('exportedmodel/1545285274' , signature_def_key='predict')
+    print( predict_fn )
+
+    characters = text[:SEQUENCE_LENGHT]
+    start = time.time()
+    NPREDICTIONS = 1000
+    for _ in range(NPREDICTIONS):
+        predictions = predict_fn( { 'character': [ list(start_text) ] } )
+    end = time.time()
+    elapsed = end - start
+    print("Total: " , elapsed , ", time per prediction: " , elapsed / NPREDICTIONS )
+    print( predictions )

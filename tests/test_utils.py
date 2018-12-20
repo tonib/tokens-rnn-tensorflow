@@ -1,7 +1,5 @@
 import tensorflow as tf
 
-tf.enable_eager_execution()
-
 def debug_ds(ds, print_ds=True):
     if print_ds:
         print(ds)
