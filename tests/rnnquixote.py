@@ -32,7 +32,7 @@ vocabulary = list( set(text) )
 # Important! Otherwise, with different executions, the list can be in different orders (really)
 vocabulary.sort()
 
-print("Vocabulary: " , vocabulary)
+print("Vocabulary: " , vocabulary, "length:" , len(vocabulary) )
 
 TRAIN_SIZE = 2000
 
@@ -109,6 +109,18 @@ def predict_text_estimator( text : str ) -> str:
         result += predict_char_estimator( result )
         print(result)
 
+def create_choose_random_char_tensor() -> tf.Tensor:
+    # Define Tensorflow ops to choose random character with temperature:
+
+    logits_input = tf.placeholder( tf.double , [ len(vocabulary) ] )
+    temperature_input = tf.placeholder( tf.double , [] )
+
+    logits = tf.reshape( logits_input , ( 1 , -1 ) )
+    logits = tf.divide( logits , temperature_input )
+    char_idx = tf.multinomial( logits=logits , num_samples=1)
+    char_idx = tf.squeeze(char_idx,axis=-1)
+    return  { 'logits' : logits_input , 'temperature' : temperature_input , 'op' : char_idx }
+
 def choose_random_char( predictions , temperature : float = -1 ) -> str:
     if temperature < 0:
         return predictions['classes'][0][0].decode( 'utf-8' )
@@ -118,21 +130,27 @@ def choose_random_char( predictions , temperature : float = -1 ) -> str:
     # -> ∞:  all [samples] have nearly the same probability
     # -> 0+: the probability of the [sample] with the highest expected reward tends to 1
 
-    # TODO: I guess this leaks memory. Define ops once and run inside session?
-    with tf.Session():
-        logits = tf.reshape( predictions['logits'] , ( 1 , -1 ) )
-        logits = tf.divide( logits , temperature )
-        idx = tf.multinomial( logits=logits , num_samples=1)
-        idx = tf.squeeze(idx,axis=-1).eval()
-        #print("Multinomial idx: " , idx, ", Character: " , vocabulary[idx[0]] )
-        # Comment this line to return the most probable char
-        return vocabulary[idx[0]]
+    if not hasattr( choose_random_char , '_ops' ):
+        # Define Tensorflow ops to choose random character ("static" variable, ughs)
+        choose_random_char._ops = create_choose_random_char_tensor()
+
+    with tf.Session() as session:
+        idx = session.run( choose_random_char._ops['op'] , 
+            { 
+                choose_random_char._ops['logits'] : predictions['logits'][0] , 
+                choose_random_char._ops['temperature'] : temperature 
+            }
+        )
+        #print( idx )
+        c = vocabulary[idx[0]]
+        #print( c )
+        return c
 
 def predict_char_predictor( predict_fn : Predictor , text : str ) -> str:
     input = [ list(text) ]
     #print("Input: " , input)
     predictions = predict_fn( { 'character': input } )
-    return choose_random_char( predictions , 0.4 )
+    return choose_random_char( predictions , 0.3 )
 
 def predict_text_predictor( predict_fn : Predictor , text : str ) -> str:
     # TODO: Check if placeholder with variable input lenght  is allowed, for variable input sequences
