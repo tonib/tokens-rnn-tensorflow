@@ -96,20 +96,8 @@ def predict_char_estimator( text : str ) -> str:
     print("Input sequence: '" , text , "'")
     for r in result:
         #print('Prediction: ' , r)
-
+        # The most probable character
         c = r['classes'][0].decode( 'utf-8' )
-        #print( 'Class output: "', c , '"')
-
-        # Instead returning the most probable character, get a random sample (see https://www.tensorflow.org/tutorials/sequences/text_generation):
-        # g_1 = tf.Graph()
-        # with g_1.as_default():
-        #     with tf.Session():
-        #         logits = tf.reshape( r['logits'] , ( 1 , -1 ) )
-        #         idx = tf.multinomial( logits=logits , num_samples=1)
-        #         idx = tf.squeeze(idx,axis=-1).eval()
-        #         print("Multinomial idx: " , idx, ", Character: " , vocabulary[idx[0]] )
-        #         # Comment this line to return the most probable char
-        #         #c = vocabulary[idx[0]]
 
         return c
     print("-----")
@@ -149,12 +137,14 @@ def predict_char_predictor( predict_fn : Predictor , text : str ) -> str:
 def predict_text_predictor( predict_fn : Predictor , text : str ) -> str:
     # TODO: Check if placeholder with variable input lenght  is allowed, for variable input sequences
     result = text
+    print( text , end='')
     next_sequence = text
     for _ in range(1000):
         new_character = predict_char_predictor( predict_fn, next_sequence )
-        print( 'New character:"' + new_character + '"' )
+        #print( 'New character:"' + new_character + '"' )
         result += new_character
-        print('"' + result + '"')
+        #print('"' + result + '"')
+        print( new_character , end='', flush=True)
         next_sequence = next_sequence[1:] + new_character
 
 def serving_input_receiver_fn():
