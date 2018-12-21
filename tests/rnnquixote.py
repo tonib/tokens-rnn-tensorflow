@@ -150,14 +150,14 @@ def predict_char_predictor( predict_fn : Predictor , text : str ) -> str:
     input = [ list(text) ]
     #print("Input: " , input)
     predictions = predict_fn( { 'character': input } )
-    return choose_random_char( predictions , 0.3 )
+    return choose_random_char( predictions , 0.35 )
 
 def predict_text_predictor( predict_fn : Predictor , text : str ) -> str:
     # TODO: Check if placeholder with variable input lenght  is allowed, for variable input sequences
     result = text
     print( text , end='')
     next_sequence = text
-    for _ in range(1000):
+    while True:
         new_character = predict_char_predictor( predict_fn, next_sequence )
         #print( 'New character:"' + new_character + '"' )
         result += new_character
