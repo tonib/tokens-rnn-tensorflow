@@ -121,21 +121,30 @@ def predict_text_estimator( text : str ) -> str:
         result += predict_char_estimator( result )
         print(result)
 
-def predict_char_predictor( predict_fn : Predictor , text : str ) -> str:
-    input = [ list(text) ]
-    #print("Input: " , input)
-    predictions = predict_fn( { 'character': input } )
-    c = predictions['classes'][0][0].decode( 'utf-8' )
+def choose_random_char( predictions , temperature : float = -1 ) -> str:
+    if temperature < 0:
+        return predictions['classes'][0][0].decode( 'utf-8' )
+
+    # Temperature: https://cs.stackexchange.com/questions/79241/what-is-temperature-in-lstm-and-neural-networks-generally
+    # = 1: Original probabilities
+    # -> ∞:  all [samples] have nearly the same probability
+    # -> 0+: the probability of the [sample] with the highest expected reward tends to 1
+
     # TODO: I guess this leaks memory. Define ops once and run inside session?
     with tf.Session():
         logits = tf.reshape( predictions['logits'] , ( 1 , -1 ) )
+        logits = tf.divide( logits , temperature )
         idx = tf.multinomial( logits=logits , num_samples=1)
         idx = tf.squeeze(idx,axis=-1).eval()
         #print("Multinomial idx: " , idx, ", Character: " , vocabulary[idx[0]] )
         # Comment this line to return the most probable char
-        c = vocabulary[idx[0]]
+        return vocabulary[idx[0]]
 
-    return c
+def predict_char_predictor( predict_fn : Predictor , text : str ) -> str:
+    input = [ list(text) ]
+    #print("Input: " , input)
+    predictions = predict_fn( { 'character': input } )
+    return choose_random_char( predictions , 0.4 )
 
 def predict_text_predictor( predict_fn : Predictor , text : str ) -> str:
     # TODO: Check if placeholder with variable input lenght  is allowed, for variable input sequences
