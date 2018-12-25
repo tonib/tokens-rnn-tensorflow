@@ -24,7 +24,7 @@ with open( 'quixote.txt' , 'r')  as file:
 #print(text)
 
 # Sequence length that will be feeded to the network
-SEQUENCE_LENGHT = 200
+SEQUENCE_LENGHT = 100
 
 # The real vocabulary:
 vocabulary = list( set(text) )
@@ -34,7 +34,7 @@ vocabulary.sort()
 
 print("Vocabulary: " , vocabulary, "length:" , len(vocabulary) )
 
-TRAIN_SIZE = 2000
+TRAIN_SIZE = 4000
 
 def train_generator():
     for _ in range(TRAIN_SIZE):
@@ -77,7 +77,7 @@ feature_columns = [ indicator_column ]
 # The estimator
 estimator = RNNClassifier(
     sequence_feature_columns=feature_columns,
-    num_units=[200], cell_type='gru', 
+    num_units=[64, 64], cell_type='gru', 
     optimizer=tf.train.AdamOptimizer,
     model_dir='./model', 
     n_classes=len(vocabulary), 
@@ -150,7 +150,7 @@ def predict_char_predictor( predict_fn : Predictor , text : str ) -> str:
     input = [ list(text) ]
     #print("Input: " , input)
     predictions = predict_fn( { 'character': input } )
-    return choose_random_char( predictions , 0.35 )
+    return choose_random_char( predictions , 0.25 )
 
 def predict_text_predictor( predict_fn : Predictor , text : str ) -> str:
     # TODO: Check if placeholder with variable input lenght  is allowed, for variable input sequences
@@ -173,7 +173,7 @@ def serving_input_receiver_fn():
     inputs =  {'character': x }
     return tf.estimator.export.ServingInputReceiver(inputs, inputs)
 
-EXPORTED_MODEL_PATH = 'exportedmodel/1545327527'
+EXPORTED_MODEL_PATH = 'exportedmodel/1545470737'
 start_text = text[:SEQUENCE_LENGHT]
 
 if args.op == 'train':
