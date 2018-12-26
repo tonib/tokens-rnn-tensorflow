@@ -3,12 +3,10 @@ from input_data import InputData
 from model import Model
 import tensorflow as tf
 import os
+from cmdline import parse_command_line
 
 # Get commnad line arguments
-parser = argparse.ArgumentParser(
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--data_dir', type=str, default='data/quixote', help='Model directory')
-args = parser.parse_args()
+args = parse_command_line()
 
 # Get data and model
 input_data = InputData(args)

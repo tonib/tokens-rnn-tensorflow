@@ -5,12 +5,10 @@ import argparse
 import random
 import tensorflow as tf
 import tests.test_utils as test_utils
+from cmdline import parse_command_line
 
 # Get commnad line arguments
-parser = argparse.ArgumentParser(
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--data_dir', type=str, default='data/quixote', help='Model directory')
-args = parser.parse_args()
+args = parse_command_line()
 
 # Get data and model
 input_data = InputData(args)
@@ -20,9 +18,10 @@ TRAIN_SIZE = 8000
 
 def train_generator():
     for _ in range(TRAIN_SIZE):
-        sequence_start_idx = random.randint( 0 , len(input_data.text) - Model.SEQUENCE_LENGHT )
+        sequence_start_idx = random.randint( 0 , len(input_data.text) - Model.SEQUENCE_LENGHT - 1 )
         input = input_data.get_sequence(sequence_start_idx, Model.SEQUENCE_LENGHT)
         output = input_data.get_sequence_output(sequence_start_idx, Model.SEQUENCE_LENGHT)
+        #print( ( { 'character' : input } , output ) )
         yield ( { 'character' : input } , output )
 
 def input_fn(evaluate=False) -> tf.data.Dataset:

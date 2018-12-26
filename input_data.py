@@ -2,11 +2,6 @@ from enum import Enum
 import os
 from typing import List
 
-class TokenMode(Enum):
-    """ Work mode: Predict characters or words """
-    CHARACTER = 1
-    WORD = 2
-
 class InputData:
     """ The train data: A text file """
 
@@ -21,15 +16,29 @@ class InputData:
         with open( path , 'r')  as file:
             self.text = file.read()
 
+        self.word_mode = False
+        if args.mode == 'word':
+            # Words vocabulary. Store the text as a words list
+            self.word_mode = True
+            self.text = self.text.split()
+
         # Text vocabulary
         self.vocabulary = list( set(self.text) )
-        # Important! Otherwise, with different executions, the list can be in different orders (really)
+
+        # Important!
         self.vocabulary.sort()
+
+        print( "Vocabulary length:", len(self.vocabulary) )
+        print( "Text length:", len(self.text) , "tokens")
+
+        #print( self.vocabulary )
 
     def get_sequence( self, sequence_start_idx : int , sequence_length : int ) -> List[str]:
         return list( self.text[sequence_start_idx : sequence_start_idx + sequence_length] )
 
     def get_sequence_output( self, sequence_start_idx : int , sequence_length : int ) -> str:
-        return self.text[sequence_start_idx + sequence_length : sequence_start_idx + sequence_length+1] 
-
+        output = self.text[sequence_start_idx + sequence_length : sequence_start_idx + sequence_length+1]
+        if self.word_mode:
+            output = output[0]
+        return output
 

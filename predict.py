@@ -4,7 +4,7 @@ from model import Model
 import os
 import tensorflow as tf
 from tensorflow.contrib.predictor.predictor import Predictor
-
+from cmdline import parse_command_line
 
 def create_choose_random_char_tensor() -> tf.Tensor:
     """ Define Tensorflow ops to choose random character with temperature """
@@ -43,18 +43,13 @@ def choose_random_char( predictions , temperature : float = -1 ) -> str:
         #print( c )
         return c
 
-def predict_char_predictor( predict_fn : Predictor , text : str ) -> str:
-    input = [ list(text) ]
-    #print("Input: " , input)
-    predictions = predict_fn( { 'character': input } )
+def predict_char_predictor( predict_fn : Predictor , input_sequence ) -> str:
+    #print("Input: " , input_sequence)
+    predictions = predict_fn( { 'character': [ input_sequence ] } )
     return choose_random_char( predictions , 0.3 )
 
-
 # Get commnad line arguments
-parser = argparse.ArgumentParser(
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--data_dir', type=str, default='data/quixote', help='Model directory')
-args = parser.parse_args()
+args = parse_command_line()
 
 # Get data
 input_data = InputData(args)
@@ -81,16 +76,17 @@ print("Using export from" , latest_export)
 # Get data from exported model
 model = Model(input_data, args, latest_export )
 
-start_text = input_data.text[:Model.SEQUENCE_LENGHT]
+start_sequence = input_data.get_sequence(0, Model.SEQUENCE_LENGHT)
 
 # TODO: Check if placeholder with variable input lenght  is allowed, for variable input sequences
-result = start_text
-print( start_text , end='')
-next_sequence = start_text
+result = start_sequence
+print( start_sequence )
+next_sequence = start_sequence
 while True:
-    new_character = predict_char_predictor( model.predict_fn, next_sequence )
-    #print( 'New character:"' + new_character + '"' )
-    result += new_character
-    #print('"' + result + '"')
-    print( new_character , end='', flush=True)
-    next_sequence = next_sequence[1:] + new_character
+    new_token = predict_char_predictor( model.predict_fn, next_sequence )
+    #print( 'New token:"' + new_token + '"' )
+    if input_data.word_mode:
+        print( ' ' , end='')
+    print( new_token, end='', flush=True)
+    next_sequence = next_sequence[1:]
+    next_sequence.append( new_token )

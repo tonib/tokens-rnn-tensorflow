@@ -15,18 +15,23 @@ class Model:
         self.input_data = input_data
 
         if not export_model_path:
-            self._create_estimator(args)
+            self._create_estimator(args, input_data)
         else:
             # Import model
             self.predict_fn = tf.contrib.predictor.from_saved_model(export_model_path , signature_def_key='predict')
 
 
-    def _create_estimator(self, args: object):
+    def _create_estimator(self, args: object, input_data : InputData):
 
         # The single character sequence 
         character_column = contrib_feature_column.sequence_categorical_column_with_vocabulary_list( 'character' , 
             vocabulary_list = self.input_data.vocabulary )
-        indicator_column = feature_column.indicator_column( character_column )
+
+        if input_data.word_mode:
+            indicator_column = tf.feature_column.embedding_column(categorical_column=character_column, dimension=20)
+        else:
+            indicator_column = feature_column.indicator_column( character_column )
+
         feature_columns = [ indicator_column ]
 
         path = os.path.join( args.data_dir , 'model' )
