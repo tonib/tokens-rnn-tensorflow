@@ -14,7 +14,7 @@ args = parse_command_line()
 input_data = InputData(args)
 model = Model(input_data, args)
 
-TRAIN_SIZE = 8000
+TRAIN_SIZE = 12000
 
 def train_generator():
     for _ in range(TRAIN_SIZE):
