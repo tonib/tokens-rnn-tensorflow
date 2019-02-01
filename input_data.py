@@ -13,7 +13,7 @@ class InputData:
 
         # The text to train / predict
         print("Reading", path)
-        with open( path , 'r')  as file:
+        with open( path , 'r', encoding='utf-8')  as file:
             self.text = file.read()
 
         self.word_mode = False

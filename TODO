@@ -27,3 +27,7 @@ https://stackoverflow.com/questions/46098863/how-to-import-an-saved-tensorflow-m
 
 222 CPM -> 48 WPM
 3,7 CPS -> 0,8 WPS
+
+requirements:
+tensorflow 1.2
+nltk 
